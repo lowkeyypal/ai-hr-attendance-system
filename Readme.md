@@ -85,7 +85,7 @@ curl -X POST http://localhost:5678/webhook-test/attendance -F "data=@/path/to/yo
 
 ![n8n workflow canvas showing all nodes connected](screenshots/n8n-workflow.png)
 
-![Demo Video](./videos/workflow-demo.mp4)
+https://github.com/user-attachments/assets/86b7f2a8-3c81-4629-be8e-6f662cce31e3
 
 ```
 [HR uploads .xlsx]
@@ -270,6 +270,8 @@ To provide immediate, actionable insights for HR managers, a secondary n8n workf
 ![Live HR Attendance Dashboard UI](screenshots/hr-realtime-dashboard.png)
 
 ![Sheet2 in Google Sheets showing employees with Excused marked as YES](screenshots/sheet2-data.png)
+
+https://github.com/user-attachments/assets/650ae76e-1624-4f38-9d53-5fd79dd1331c
 
 
 *(Note: The Dashboard HTML and specific webhook routes are included in the provided JSON export).*
