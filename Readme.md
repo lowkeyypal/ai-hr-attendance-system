@@ -272,6 +272,10 @@ To provide immediate, actionable insights for HR managers, a secondary n8n workf
 ![Sheet2 in Google Sheets showing employees with Excused marked as YES](screenshots/sheet2-data.png)
 
 https://github.com/user-attachments/assets/650ae76e-1624-4f38-9d53-5fd79dd1331c
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6946a4baa15549976db7ec1fbb4e2633ee9e4861
 
 
 *(Note: The Dashboard HTML and specific webhook routes are included in the provided JSON export).*
