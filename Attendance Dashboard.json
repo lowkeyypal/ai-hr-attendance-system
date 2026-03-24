@@ -1,0 +1,284 @@
+{
+  "name": "Attendance Dashboard",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "dashboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "94f7ef92-5149-4648-ae5d-2434ab65f3de",
+      "name": "Webhook",
+      "webhookId": "70b9edfb-8642-4184-b7d7-9535f33a8303"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "INSERT_GOOGLE_SHEET_URL_HERE",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "INSERT_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "INSERT_GOOGLE_SHEET_URL_HERE"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "75a7300c-3c80-498b-b3ee-4c3ed7ab9715",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6A2RLTTa4t6watIv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Attendance Dashboard</title>\n<style>\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 24px; }\n  h1 { color: #1a1a2e; margin-bottom: 8px; font-size: 22px; }\n  .cards { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; margin-top: 20px; }\n  .card { background: white; border-radius: 12px; padding: 20px 28px; flex: 1; min-width: 140px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }\n  .card h3 { font-size: 12px; color: #888; margin-bottom: 8px; text-transform: uppercase; }\n  .card .number { font-size: 36px; font-weight: bold; }\n  .late { color: #e74c3c; }\n  .ontime { color: #2ecc71; }\n  .atrisk { color: #f39c12; }\n  .critical { color: #e74c3c; }\n  table { width: 100%; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-collapse: collapse; }\n  th { background: #1a1a2e; color: white; padding: 14px 16px; text-align: left; font-size: 13px; }\n  td { padding: 12px 16px; border-bottom: 1px solid #f0f2f5; font-size: 14px; }\n  tr:last-child td { border-bottom: none; }\n  tr:hover td { background: #f9f9f9; }\n  .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }\n  .safe { background: #d4edda; color: #155724; }\n  .at-risk { background: #fff3cd; color: #856404; }\n  .critical-badge { background: #f8d7da; color: #721c24; }\n  .excused-badge { background: #cce5ff; color: #004085; }\n  .btn-excused { border: none; background: #3498db; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }\n  .btn-excused:hover { background: #2980b9; }\n  .refresh { font-size: 12px; color: #888; margin-bottom: 20px; }\n  h2 { margin-bottom: 16px; color: #1a1a2e; font-size: 18px; }\n  .sort-bar { margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }\n  .sort-bar label { font-size: 14px; color: #555; }\n  .sort-bar select { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; background: white; cursor: pointer; }\n</style>\n</head>\n<body>\n\n<h1>HR Attendance Dashboard — Growify Digital LLP</h1>\n<p class=\"refresh\" id=\"refreshTimer\">Auto-refreshing every 60 seconds</p>\n\n<div class=\"cards\">\n  <div class=\"card\"><h3>Total Employees</h3><div class=\"number\" id=\"totalCount\">—</div></div>\n  <div class=\"card\"><h3>Late This Month</h3><div class=\"number late\" id=\"lateCount\">—</div></div>\n  <div class=\"card\"><h3>On Time</h3><div class=\"number ontime\" id=\"onTimeCount\">—</div></div>\n  <div class=\"card\"><h3>At Risk (2)</h3><div class=\"number atrisk\" id=\"atRiskCount\">—</div></div>\n  <div class=\"card\"><h3>Critical (3+)</h3><div class=\"number critical\" id=\"criticalCount\">—</div></div>\n</div>\n\n<h2>All Late Employees</h2>\n<div class=\"sort-bar\">\n  <label>Sort by:</label>\n  <select id=\"sortSelect\" onchange=\"render()\">\n    <option value=\"count-desc\">Late Days (High to Low)</option>\n    <option value=\"count-asc\">Late Days (Low to High)</option>\n    <option value=\"name-asc\">Name (A to Z)</option>\n    <option value=\"name-desc\">Name (Z to A)</option>\n    <option value=\"date-desc\">Last Warning (Newest)</option>\n    <option value=\"date-asc\">Last Warning (Oldest)</option>\n  </select>\n</div>\n\n<table>\n  <thead>\n    <tr>\n      <th>#</th>\n      <th>Employee ID</th>\n      <th>Name</th>\n      <th>Late Days</th>\n      <th>Last Warning</th>\n      <th>Status</th>\n      <th>Action</th>\n    </tr>\n  </thead>\n  <tbody id=\"employeeTable\"></tbody>\n</table>\n\n<script>\nconst rawData = {{ JSON.stringify($input.all()) }};\nlet excusedSet = new Set();\n\nfunction getBadge(id, count) {\n  if (excusedSet.has(id)) return '<span class=\"badge excused-badge\">Excused</span>';\n  if (count >= 3) return '<span class=\"badge critical-badge\">Critical</span>';\n  if (count == 2) return '<span class=\"badge at-risk\">At Risk</span>';\n  return '<span class=\"badge safe\">Safe</span>';\n}\n\nfunction render() {\n  const rows = rawData.map(r => r.json || r);\n  rows.forEach(r => {\n  if (r['Excused'] === 'YES') {\n    excusedSet.add(r['Employee ID'] || '');\n  }\n});\n\n  const total = rows.length;\n  const lateTotal = rows.filter(r => parseInt(r['Monthly Late Count'] || 0) > 0).length;\n  const onTime = total - lateTotal;\n  const atRisk = rows.filter(r => parseInt(r['Monthly Late Count'] || 0) == 2).length;\n  const critical = rows.filter(r => parseInt(r['Monthly Late Count'] || 0) >= 3).length;\n\n  document.getElementById('totalCount').textContent = total;\n  document.getElementById('lateCount').textContent = lateTotal;\n  document.getElementById('onTimeCount').textContent = onTime;\n  document.getElementById('atRiskCount').textContent = atRisk;\n  document.getElementById('criticalCount').textContent = critical;\n\n  const sortVal = document.getElementById('sortSelect')?.value || 'count-desc';\n\n  const filtered = rows\n    .filter(r => parseInt(r['Monthly Late Count'] || 0) >= 1)\n    .sort((a, b) => {\n      const ca = parseInt(a['Monthly Late Count'] || 0);\n      const cb = parseInt(b['Monthly Late Count'] || 0);\n      const na = (a['Name'] || '').toLowerCase();\n      const nb = (b['Name'] || '').toLowerCase();\n      const da = a['Last Warning Date'] || '';\n      const db = b['Last Warning Date'] || '';\n      if (sortVal === 'count-desc') return cb - ca;\n      if (sortVal === 'count-asc') return ca - cb;\n      if (sortVal === 'name-asc') return na.localeCompare(nb);\n      if (sortVal === 'name-desc') return nb.localeCompare(na);\n      if (sortVal === 'date-desc') return db.localeCompare(da);\n      if (sortVal === 'date-asc') return da.localeCompare(db);\n      return 0;\n    });\n\n  const tbody = document.getElementById('employeeTable');\n  if (filtered.length === 0) {\n    tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;color:#888\">No employees at risk</td></tr>';\n    return;\n  }\n\n  tbody.innerHTML = filtered.map((r, i) => {\n    const id = r['Employee ID'] || '';\n    const name = r['Name'] || '';\n    const count = parseInt(r['Monthly Late Count'] || 0);\n    const lastDate = r['Last Warning Date'] || '';\n    const isExcused = excusedSet.has(id);\n    return `<tr>\n      <td>${i + 1}</td>\n      <td>${id}</td>\n      <td>${name}</td>\n      <td>${count}</td>\n      <td>${lastDate}</td>\n      <td>${getBadge(id, count)}</td>\n      <td>${!isExcused ? `<button class=\"btn-excused\" onclick=\"excuse('${id}')\">Mark Excused</button>` : '—'}</td>\n    </tr>`;\n  }).join('');\n}\n\nasync function excuse(id) {\n  try {\n    await fetch('http://localhost:5678/webhook/excuse-employee', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ employeeId: id })\n    });\n    excusedSet.add(id);\n    render();\n  } catch(e) {\n    alert('Failed to mark as excused. Please try again.');\n  }\n}\n\nlet seconds = 60;\nsetInterval(() => {\n  seconds--;\n  document.getElementById('refreshTimer').textContent = `Auto-refreshing in ${seconds} seconds`;\n  if (seconds <= 0) { seconds = 60; }\n}, 1000);\n\nrender();\n</script>\n</body>\n</html>",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "1b062e85-c338-4deb-a365-ad85ae6720d2",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "excuse-employee",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        160
+      ],
+      "id": "15888832-2e10-4d0e-b4b8-e8c324277758",
+      "name": "Webhook1",
+      "webhookId": "f052f719-8b4f-46ad-8b0e-882bd09a246a"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "INSERT_GOOGLE_SHEET_URL_HERE",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "INSERT_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "INSERT_GOOGLE_SHEET_URL_HERE"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Employee ID": "={{ $json.body.employeeId }}",
+            "Excused": "YES"
+          },
+          "matchingColumns": [
+            "Employee ID"
+          ],
+          "schema": [
+            {
+              "id": "Employee ID",
+              "displayName": "Employee ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Monthly Late Count",
+              "displayName": "Monthly Late Count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Last Warning Date",
+              "displayName": "Last Warning Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Month/Year",
+              "displayName": "Month/Year",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Excused",
+              "displayName": "Excused",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        160
+      ],
+      "id": "efc4692f-93d3-4c8d-a5db-ed1fdeffa0c0",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6A2RLTTa4t6watIv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"success\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        160
+      ],
+      "id": "9f6b5112-05cb-44f1-bcb1-c784a2876d0d",
+      "name": "Respond to Webhook1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2db12c0d-5136-4682-8757-ed2603ad870a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4acd8bf51771f6f4fa0ffda7ef1f0835417d4e00e0e146418b542b6b81dbbc05"
+  },
+  "id": "RnognIYntY8bc3Qb",
+  "tags": []
+}
